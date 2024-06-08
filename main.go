@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +19,11 @@ import (
 	"github.com/uptrace/bun/extra/bundebug"
 )
 
+type Data struct {
+	Todos  []Todo
+	Errors []error
+}
+
 type Todo struct {
 	bun.BaseModel `bun:"table:todos,alias:t"`
 
@@ -27,6 +34,21 @@ type Todo struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time `bun:",nullzero"`
 	DeletedAt time.Time `bun:",soft_delete,nullzero"`
+}
+
+type Template struct {
+	templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
+func formatDateTime(d time.Time) string {
+	if d.IsZero() {
+		return ""
+	}
+	return d.Format("2006-01-02 15:04")
 }
 
 func main() {
